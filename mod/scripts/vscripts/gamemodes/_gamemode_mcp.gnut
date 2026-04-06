@@ -459,8 +459,10 @@ bool function MobileHardpointRemove( entity ent )
 array<vector> function FindPath(vector start, vector end)
 {
     #if OCTBOTS
+    array< array<vector> > out_path
 	    // doing this is does really weird stuff
-		array<vector> path = OcttreeFindPath( start, end )
+		OcttreeFindPath( start, end, out_path )
+		array<vector> path = out_path[0]
     #elseif BP_ORT
 		var navs = NavigationCreate( HULL_HUMAN );
 		try {
