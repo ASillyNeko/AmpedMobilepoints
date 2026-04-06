@@ -163,9 +163,11 @@ void function HandleCapturepointMovement()
 	while ( GetGameState() != eGameState.Playing )
 		WaitFrame()
 
+	float waitTime = 30;
+	float lastStart = Time();
 	while ( GetGameState() <= eGameState.Playing )
 	{
-        wait 30
+        wait waitTime
 
 		if ( GetGameState() > eGameState.Playing )
 			break
@@ -183,14 +185,18 @@ void function HandleCapturepointMovement()
             newHp.origin = destination
             newHp.angles = angles
 
+			WaitFrame()
             thread HandleSingleHardpointMovement( hardpoint, newHp )
+			WaitFrame()
             thread HandleHardpointRuiMovement( hardpoint )
+			WaitFrame()
             thread HandleHardpointTrigger( hardpoint, CreateTriggerRadiusMultiple( hardpoint.prop.GetOrigin(), 400., [], TRIG_FLAG_PLAYERONLY, 400., -400. ) )
             destination = hardpoint.prop.GetOrigin()
             angles = hardpoint.prop.GetAngles()
             trigger = hardpoint.trigger
         }
         
+		lastStart = Time()
         while ( hardpointsReady < 3 )
             WaitFrame()
         
@@ -202,39 +208,56 @@ void function HandleCapturepointMovement()
 
         foreach( entity player in GetPlayerArray() )
             Remote_CallFunction_Replay( player, "ServerCallback_MobileCapturepoints_Settled" )
+
+		waitTime = min( max( fabs( Time() - lastStart - 20 ), 5 ), 20) + 10
     }
 }
 
 void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointState newHp )
 {
-    WaitFrame()
+	if ( !IsNewThread() )
+	{
+		thread HandleSingleHardpointMovement( hp, newHp )
+		return
+	}
 
-    #if OCTBOTS
-	    // doing this is does really weird stuff
-		array<vector> path = OcttreeFindPath( hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> )
-    #elseif BP_ORT
-		var navs = NavigationCreate( HULL_HUMAN );
-		try {
-			NavigationFindPath( navs, expect vector ( NavigationRandomPoint( navs, hp.prop.GetOrigin(), 50.) ), expect vector ( NavigationRandomPoint( navs, newHp.origin, 50.) ) );
-		} catch ( err ) { }
-		array<vector> path = []
+	WaitFrame()
 
-		var point = NavigationNextPoint( navs );
-		while( point != null ) {
-			print( point )
-			path.append( expect vector( point ) )
-			point = NavigationNextPoint( navs )
-		}
-    #else 
-	    print( "no bp_ort :(" )
-	    array<vector> path = [ hp.prop.GetOrigin() + <0,0,50>, newHp.origin + <0,0,50> ]
-    #endif
+	vector start = hp.prop.GetOrigin() + <0,0,150>
+	vector end = newHp.origin + <0,0,150>
+	vector midpoint = ( start + end ) / 2.0 
+
+	int numPositions = 10
+	array<vector> randomSpots = NavMesh_RandomPositions( midpoint, HULL_TITAN, numPositions, 0, sqrt( DistanceSqr( midpoint, start ) ) )
+
+	array<vector> path = []
+	if ( randomSpots.len() != 0 )
+	{
+		path = []
+		randomSpots.randomize()
+
+		midpoint = randomSpots[ RandomInt( randomSpots.len() - 1) ] + <0,0,150>
+
+		foreach ( vector point in FindPath( start, midpoint ) )
+			path.append( point )
+		foreach ( vector point in FindPath( midpoint, end ) )
+			path.append( point )
+	} else {
+		path = FindPath( start, end ) 
+	}
+
 
     thread HandleSingleHardpointMovementFollow( hp, newHp, path )
 }
 
 void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpointState newHp, array<vector> path )
 {
+	if ( !IsNewThread() )
+	{
+		thread HandleSingleHardpointMovementFollow( hp, newHp, path )
+		return
+	}
+
     hardpointsReady += 1
 
     while ( hardpointsReady < 3 )
@@ -431,6 +454,32 @@ bool function MobileHardpointRemove( entity ent )
 	//printt( "keeping ent", ent.GetClassName() )
 
 	return false
+}
+
+array<vector> function FindPath(vector start, vector end)
+{
+    #if OCTBOTS
+	    // doing this is does really weird stuff
+		array<vector> path = OcttreeFindPath( start, end )
+    #elseif BP_ORT
+		var navs = NavigationCreate( HULL_HUMAN );
+		try {
+			NavigationFindPath( navs, expect vector ( NavigationRandomPoint( navs, start, 50.) ), expect vector ( NavigationRandomPoint( navs, end, 50.) ) );
+		} catch ( err ) { printt( err ) }
+		array<vector> path = []
+
+		var point = NavigationNextPoint( navs );
+		while( point != null ) {
+			print( point )
+			path.append( expect vector( point ) )
+			point = NavigationNextPoint( navs )
+		}
+    #else 
+	    print( "no bp_ort :(" )
+	    array<vector> path = [ end, start ]
+    #endif
+
+	return path
 }
 
 void function not_AT_CollisionCleanup( entity spawnPoint )
