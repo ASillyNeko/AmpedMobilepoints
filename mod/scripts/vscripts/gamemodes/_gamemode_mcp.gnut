@@ -238,10 +238,14 @@ void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointStat
 
 		midpoint = randomSpots[ RandomInt( randomSpots.len() - 1) ] + <0,0,150>
 
-		foreach ( vector point in FindPath( start, midpoint ) )
-			path.append( point )
-		foreach ( vector point in FindPath( midpoint, end ) )
-			path.append( point )
+		// try {
+			foreach ( vector point in FindPath( start, midpoint ) )
+				path.append( point )
+		// } catch (err1) { printt( "error in FindPath : ", err1) } 
+		// try {
+			foreach ( vector point in FindPath( midpoint, end ) )
+				path.append( point )
+		// } catch (err2) { printt( "error in FindPath : ", err2) } 
 	} else {
 		path = FindPath( start, end ) 
 	}
@@ -422,6 +426,12 @@ void function HandleHardpointTrigger( HardpointState hp, entity trigger )
 
 void function EmitHardpointHoverSound( HardpointState hp )
 {
+	if ( !IsNewThread() )
+	{
+		thread EmitHardpointHoverSound( hp )
+		return
+	}
+
     hp.ent.EndSignal( "StoppedHardpointMovement" )
 
 	OnThreadEnd(
