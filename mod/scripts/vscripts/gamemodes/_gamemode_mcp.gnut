@@ -359,7 +359,7 @@ void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpoi
 		point = FitHardpoint( hp.prop, point )
 		mover.NonPhysicsMoveTo( point, timePerLine, 0.0, 0.0 )
 
-		wait timePerLine
+		WaitFrame()
 
 		if ( IsValid( dirFX ) )
 			dirFX.Destroy()
