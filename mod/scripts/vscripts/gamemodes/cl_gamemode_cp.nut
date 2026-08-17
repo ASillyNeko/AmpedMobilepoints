@@ -5,7 +5,8 @@ global function GetHardpointWorlRui
 
 global function showit
 
-struct {
+struct
+{
 	var hardpointARui
 	var hardpointBRui
 	var hardpointCRui
@@ -17,7 +18,7 @@ struct {
 
 void function ClGamemodeCP_Init()
 {
-	//ClCapturePoint_Init() //Gamemmode-Independent CapturePoint stuff
+	// ClCapturePoint_Init() //Gamemmode-Independent CapturePoint stuff
 	AddCreateCallback( "info_hardpoint", OnHardpointCreated )
 
 	file.hardpointARui = CreateCockpitRui( $"ui/cp_hardpoint_marker.rpak", 200 )
@@ -57,8 +58,8 @@ void function ClGamemodeCP_OnClientScriptInit( entity player )
 
 void function CP_ObjectiveEntChanged( entity player, entity oldEnt, entity newEnt, bool actuallyChanged )
 {
-	//if ( player != GetLocalClientPlayer() )
-	//	return
+	// if ( player != GetLocalClientPlayer() )
+	// 	return
 
 	printt( GetLocalClientPlayer(), GetLocalViewPlayer(), player, oldEnt, newEnt )
 
@@ -100,7 +101,7 @@ void function CP_ObjectiveEntChanged( entity player, entity oldEnt, entity newEn
 	}
 	else
 	{
-		//If we are not a mode hardpoint do not make a rui for us.
+		// If we are not a mode hardpoint do not make a rui for us.
 		return
 	}
 
@@ -112,7 +113,7 @@ void function CP_ObjectiveEntChanged( entity player, entity oldEnt, entity newEn
 	RuiTrackInt( rui, "hardpointState", null, RUI_TRACK_SCRIPT_NETWORK_VAR_GLOBAL_INT, GetNetworkedVariableIndex( stateVar ) )
 	RuiTrackFloat( rui, "progressFrac", null, RUI_TRACK_SCRIPT_NETWORK_VAR_GLOBAL, GetNetworkedVariableIndex( progressVar ) )
 
-	RuiSetBool(  rui, "isVisible", true )
+	RuiSetBool( rui, "isVisible", true )
 }
 
 void function OnHardpointCreated( entity hardpoint )
@@ -160,7 +161,7 @@ void function OnHardpointCreatedThread( entity hardpoint )
 	}
 	else
 	{
-		//If we are not a mode hardpoint do not make a rui for us.
+		// If we are not a mode hardpoint do not make a rui for us.
 		return
 	}
 
@@ -175,8 +176,7 @@ void function OnHardpointCreatedThread( entity hardpoint )
 	RuiTrackInt( rui, "hardpointState", null, RUI_TRACK_SCRIPT_NETWORK_VAR_GLOBAL_INT, GetNetworkedVariableIndex( stateVar ) )
 	RuiTrackFloat( rui, "progressFrac", null, RUI_TRACK_SCRIPT_NETWORK_VAR_GLOBAL, GetNetworkedVariableIndex( progressVar ) )
 
-
-	RuiSetBool(  rui, "isVisible", true )
+	RuiSetBool( rui, "isVisible", true )
 
 	while ( GetGameState() <= eGameState.Playing )
 	{
@@ -184,7 +184,6 @@ void function OnHardpointCreatedThread( entity hardpoint )
 			RuiSetBool( rui, "isTitan", player.IsTitan() )
 		WaitFrame()
 	}
-
 }
 
 var function GetHardpointWorlRui( int hardpointID )
@@ -193,8 +192,10 @@ var function GetHardpointWorlRui( int hardpointID )
 	{
 		case 0:
 			return file.hardpointARui
+
 		case 1:
 			return file.hardpointBRui
+
 		case 2:
 			return file.hardpointCRui
 	}
@@ -203,12 +204,12 @@ var function GetHardpointWorlRui( int hardpointID )
 
 void function showit()
 {
-	RuiSetBool(  file.hardpointAHudRui, "isVisible", true )
-	RuiSetBool(  file.hardpointARui, "isVisible", true )
-	RuiSetBool(  file.hardpointBHudRui, "isVisible", true )
-	RuiSetBool(  file.hardpointBRui, "isVisible", true )
-	RuiSetBool(  file.hardpointCHudRui, "isVisible", true )
-	RuiSetBool(  file.hardpointCRui, "isVisible", true )
+	RuiSetBool( file.hardpointAHudRui, "isVisible", true )
+	RuiSetBool( file.hardpointARui, "isVisible", true )
+	RuiSetBool( file.hardpointBHudRui, "isVisible", true )
+	RuiSetBool( file.hardpointBRui, "isVisible", true )
+	RuiSetBool( file.hardpointCHudRui, "isVisible", true )
+	RuiSetBool( file.hardpointCRui, "isVisible", true )
 }
 
 void function ServerCallback_CP_PlayMatchEndingMusic()
@@ -219,10 +220,10 @@ void function ServerCallback_CP_PlayMatchEndingMusic()
 
 void function ClGamemodeCP_OnWinnerDetermined()
 {
-	RuiSetBool(  file.hardpointAHudRui, "isVisible", false )
-	RuiSetBool(  file.hardpointARui, "isVisible", false )
-	RuiSetBool(  file.hardpointBHudRui, "isVisible", false )
-	RuiSetBool(  file.hardpointBRui, "isVisible", false )
-	RuiSetBool(  file.hardpointCHudRui, "isVisible", false )
-	RuiSetBool(  file.hardpointCRui, "isVisible", false )
+	RuiSetBool( file.hardpointAHudRui, "isVisible", false )
+	RuiSetBool( file.hardpointARui, "isVisible", false )
+	RuiSetBool( file.hardpointBHudRui, "isVisible", false )
+	RuiSetBool( file.hardpointBRui, "isVisible", false )
+	RuiSetBool( file.hardpointCHudRui, "isVisible", false )
+	RuiSetBool( file.hardpointCRui, "isVisible", false )
 }

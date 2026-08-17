@@ -7,38 +7,41 @@ global hardpointsReady = 0
 struct NewHardpointState
 {
 	entity trigger
-    vector origin
-    vector angles
+	vector origin
+	vector angles
 }
 
 void function GamemodeMCP_Init()
 {
-    Riff_ForceTitanAvailability( eTitanAvailability.Never )
+	Riff_ForceTitanAvailability( eTitanAvailability.Never )
 
 	Hardpoints_Init()
 
+	SetSpawnpointGamemodeOverride( CAPTURE_POINT )
 	ScoreEvent_SetupEarnMeterValuesForMixedModes()
+	SetPlayThreeMinuteMusic( true )
+	SetPlayThreeMinuteMusicCheck( ThreeMinuteMusicCheck )
 
 	AddCallback_EntitiesDidLoad( EntitiesDidLoad_SpawnHardpoints )
 	AddCallback_OnPlayerKilled( Hardpoints_OnPlayerKilled_UpdateMedals )
 
-	ScoreEvent_SetEarnMeterValues("KillPilot", 0.1, 0.12)
-	ScoreEvent_SetEarnMeterValues("KillTitan", 0, 0)
-	ScoreEvent_SetEarnMeterValues("TitanKillTitan", 0, 0)
-	ScoreEvent_SetEarnMeterValues("PilotBatteryStolen", 0, 35)
-	ScoreEvent_SetEarnMeterValues("Headshot", 0, 0.02)
-	ScoreEvent_SetEarnMeterValues("FirstStrike", 0, 0.05)
+	ScoreEvent_SetEarnMeterValues( "KillPilot", 0.1, 0.12 )
+	ScoreEvent_SetEarnMeterValues( "KillTitan", 0, 0 )
+	ScoreEvent_SetEarnMeterValues( "TitanKillTitan", 0, 0 )
+	ScoreEvent_SetEarnMeterValues( "PilotBatteryStolen", 0, 35 )
+	ScoreEvent_SetEarnMeterValues( "Headshot", 0, 0.02 )
+	ScoreEvent_SetEarnMeterValues( "FirstStrike", 0, 0.05 )
 
-	ScoreEvent_SetEarnMeterValues("ControlPointCapture", 0.1, 0.1)
-	ScoreEvent_SetEarnMeterValues("ControlPointHold", 0.02, 0.02)
-	ScoreEvent_SetEarnMeterValues("ControlPointAmped", 0.2, 0.15)
-	ScoreEvent_SetEarnMeterValues("ControlPointAmpedHold", 0.05, 0.05)
+	ScoreEvent_SetEarnMeterValues( "ControlPointCapture", 0.1, 0.1 )
+	ScoreEvent_SetEarnMeterValues( "ControlPointHold", 0.02, 0.02 )
+	ScoreEvent_SetEarnMeterValues( "ControlPointAmped", 0.2, 0.15 )
+	ScoreEvent_SetEarnMeterValues( "ControlPointAmpedHold", 0.05, 0.05 )
 
-	ScoreEvent_SetEarnMeterValues("HardpointAssault", 0.10, 0.15)
-	ScoreEvent_SetEarnMeterValues("HardpointDefense", 0.5, 0.10)
-	ScoreEvent_SetEarnMeterValues("HardpointPerimeterDefense", 0.1, 0.12)
-	ScoreEvent_SetEarnMeterValues("HardpointSiege", 0.1, 0.15)
-	ScoreEvent_SetEarnMeterValues("HardpointSnipe", 0.1, 0.15)
+	ScoreEvent_SetEarnMeterValues( "HardpointAssault", 0.1, 0.15 )
+	ScoreEvent_SetEarnMeterValues( "HardpointDefense", 0.5, 0.1 )
+	ScoreEvent_SetEarnMeterValues( "HardpointPerimeterDefense", 0.1, 0.12 )
+	ScoreEvent_SetEarnMeterValues( "HardpointSiege", 0.1, 0.15 )
+	ScoreEvent_SetEarnMeterValues( "HardpointSnipe", 0.1, 0.15 )
 
 	RegisterSignal( "StoppedHardpointMovement" )
 }
@@ -61,7 +64,7 @@ void function RateSpawnpoints_MCP( int checkClass, array<entity> spawnpoints, in
 	entity friendlyHardpoint // determine our furthest out hardpoint
 	foreach ( entity hardpoint in HARDPOINTS )
 	{
-		if ( hardpoint.GetTeam() == player.GetTeam() && GetGlobalNetFloat( "objective" + CapturePoint_GetGroup(hardpoint) + "Progress" ) >= 0.95 )
+		if ( hardpoint.GetTeam() == player.GetTeam() && GetGlobalNetFloat( "objective" + CapturePoint_GetGroup( hardpoint ) + "Progress" ) >= 0.95 )
 		{
 			if ( IsValid( friendlyHardpoint ) )
 			{
@@ -89,44 +92,50 @@ void function RateSpawnpoints_MCP( int checkClass, array<entity> spawnpoints, in
 
 void function EntitiesDidLoad_SpawnHardpoints()
 {
-    #if BP_ORT && BOTEXTRAS
-	if (GetConVarBool( "auto_select_gamemode") )
-    	SetConVarInt( "bot_cmds_type", 8 )
-    #endif
+	#if BP_ORT && BOTEXTRAS
+		if ( GetConVarBool( "auto_select_gamemode" ) )
+			SetConVarInt( "bot_cmds_type", 8 )
+	#endif
 
-	foreach ( entity hp in GetEntArrayByClass_Expensive("info_hardpoint") )
+	foreach ( entity hp in GetEntArrayByClass_Expensive( "info_hardpoint" ) )
 	{
-		if ( MobileHardpointRemove( hp ) || !hp.HasKey( "triggerTarget" ) )
+		if ( GameModeRemove( hp ) )
 			continue
 
 		HardpointState hpState
 		hpState.group = CapturePoint_GetGroup( hp )
 		hpState.ent = hp
 		hpState.prop = CreatePropDynamic( hp.GetModelName(), hp.GetOrigin(), hp.GetAngles(), SOLID_VPHYSICS )
-		hpState.trigger = GetEnt( expect string(hp.kv.triggerTarget) )
+		hpState.trigger = GetEnt( expect string( hp.kv.triggerTarget ) )
 		CPstate.hardpoints.append( hpState )
 
-		switch (hpState.group) {
+		switch ( hpState.group )
+		{
 			case "A":
 				hp.SetHardpointID( 0 )
 				break
+
 			case "B":
 				hp.SetHardpointID( 1 )
 				break
+
 			case "C":
 				hp.SetHardpointID( 2 )
 				break
+
 			default:
 				throw "unknown hardpoint group name"
 		}
 
 		SetTeam( hpState.ent, TEAM_UNASSIGNED )
 		SetGlobalNetEnt( "objective" + hpState.group + "Ent", hpState.ent )
-		
+
 		hpState.trigger.SetEnterCallback( OnHardpointEnter )
 		hpState.trigger.SetLeaveCallback( OnHardpointLeave )
 		hpState.trigger.SetOwner( hp )
 
+		hpState.ent.SetHardpointEstimatedCaptureTime( -1 )
+		hpState.ent.SetHardpointProgressRefPoint( 0 )
 		hpState.ent.Minimap_SetCustomState( hpState.ent.GetHardpointID() + 1 )
 		hpState.ent.Minimap_AlwaysShow( TEAM_MILITIA, null )
 		hpState.ent.Minimap_AlwaysShow( TEAM_IMC, null )
@@ -136,11 +145,13 @@ void function EntitiesDidLoad_SpawnHardpoints()
 		hpState.ent.s.state <- CAPTURE_POINT_STATE_UNASSIGNED
 		hpState.ent.s.lastCappedBy <- TEAM_UNASSIGNED
 		hpState.ent.s.wasJustCapping <- false
+		hpState.ent.s.lastPower <- 0
+		hpState.ent.s.isPlayingCapturingSound <- false
+		hpState.ent.s.isPlayingAmpingCapturingSound <- false
 
 		hpState.ent.s.offsetRef <- CreateScriptRef( hpState.ent.GetOrigin() + < 0, 0, 64 >, < 0.0, 0.0, 0.0 > )
 		hpState.ent.s.offsetRef.SetParent( hpState.prop )
 		// hpState.ent.s.offsetRef.SetLocalOrigin( < 0, 0, 64 > )
-
 
 		HARDPOINTS.append( hpState.ent ) // for vo script
 		hpState.ent.s.trigger <- hpState.trigger // also for vo script
@@ -151,66 +162,66 @@ void function EntitiesDidLoad_SpawnHardpoints()
 	}
 
 	thread TrackChevronStates()
-    #if BP_ORT && OCTBOTS
-    thread HandleCapturepointMovement()
-    #else
-    throw "no bp_ort; install bp_ort"
-    #endif
+	#if BP_ORT && OCTBOTS
+		thread HandleCapturepointMovement()
+	#else
+		throw "no bp_ort; install bp_ort"
+	#endif
 }
 
 void function HandleCapturepointMovement()
 {
 	while ( GetGameState() != eGameState.Playing )
-		WaitFrame()
+		svGlobal.levelEnt.WaitSignal( "GameStateChanged" )
 
-	float waitTime = 30;
-	float lastStart = Time();
+	float waitTime = 30
+	float lastStart = Time()
 	while ( GetGameState() <= eGameState.Playing )
 	{
-        wait waitTime
+		wait waitTime
 
 		if ( GetGameState() > eGameState.Playing )
 			break
 
-        CPstate.hardpoints.randomize()
-        vector destination = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].prop.GetOrigin()
-        vector angles = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].prop.GetAngles()
-        entity trigger = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].trigger
-        foreach( HardpointState hardpoint in CPstate.hardpoints )
-        {
-            hardpoint.trigger.Disable()
-            
-            NewHardpointState newHp
-        	newHp.trigger = trigger
-            newHp.origin = destination
-            newHp.angles = angles
+		CPstate.hardpoints.randomize()
+		vector destination = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].prop.GetOrigin()
+		vector angles = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].prop.GetAngles()
+		entity trigger = CPstate.hardpoints[ CPstate.hardpoints.len() - 1 ].trigger
+		foreach ( HardpointState hardpoint in CPstate.hardpoints )
+		{
+			hardpoint.trigger.Disable()
+
+			NewHardpointState newHp
+			newHp.trigger = trigger
+			newHp.origin = destination
+			newHp.angles = angles
 
 			WaitFrame()
-            thread HandleSingleHardpointMovement( hardpoint, newHp )
+			thread HandleSingleHardpointMovement( hardpoint, newHp )
 			WaitFrame()
-            thread HandleHardpointRuiMovement( hardpoint )
+			thread HandleHardpointRuiMovement( hardpoint )
 			WaitFrame()
-            thread HandleHardpointTrigger( hardpoint, CreateTriggerRadiusMultiple( hardpoint.prop.GetOrigin(), 400., [], TRIG_FLAG_PLAYERONLY, 400., -400. ) )
-            destination = hardpoint.prop.GetOrigin()
-            angles = hardpoint.prop.GetAngles()
-            trigger = hardpoint.trigger
-        }
-        
+			thread HandleHardpointTrigger( hardpoint, CreateTriggerRadiusMultiple( hardpoint.prop.GetOrigin(), 400.0, [], TRIG_FLAG_PLAYERONLY, 400.0, -400.0 ) )
+			destination = hardpoint.prop.GetOrigin()
+			angles = hardpoint.prop.GetAngles()
+			trigger = hardpoint.trigger
+		}
+
 		lastStart = Time()
-        while ( hardpointsReady < 3 )
-            WaitFrame()
-        
-        foreach( entity player in GetPlayerArray() )
-            Remote_CallFunction_Replay( player, "ServerCallback_MobileCapturepoints_Moving" )
+		while ( hardpointsReady < 3 )
+			WaitFrame()
 
-        while ( hardpointsReady > 0 )
-            WaitFrame()
+		foreach ( entity player in GetPlayerArray() )
+			Remote_CallFunction_Replay( player, "ServerCallback_MobileCapturepoints_Moving" )
 
-        foreach( entity player in GetPlayerArray() )
-            Remote_CallFunction_Replay( player, "ServerCallback_MobileCapturepoints_Settled" )
+		while ( hardpointsReady > 0 )
+			WaitFrame()
 
-		waitTime = min( max( fabs( Time() - lastStart - 20 ), 5 ), 20) + 10
-    }
+		foreach ( entity player in GetPlayerArray() )
+			Remote_CallFunction_Replay( player, "ServerCallback_MobileCapturepoints_Settled" )
+
+		waitTime = min( max( fabs( Time() - lastStart - 20 ), 5 ), 20 ) + 10
+	}
 }
 
 void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointState newHp )
@@ -223,9 +234,9 @@ void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointStat
 
 	WaitFrame()
 
-	vector start = hp.prop.GetOrigin() + <0,0,150>
-	vector end = newHp.origin + <0,0,150>
-	vector midpoint = ( start + end ) / 2.0 
+	vector start = hp.prop.GetOrigin() + < 0, 0, 150 >
+	vector end = newHp.origin + < 0, 0, 150 >
+	vector midpoint = ( start + end ) / 2.0
 
 	int numPositions = 10
 	array<vector> randomSpots = NavMesh_RandomPositions( midpoint, HULL_TITAN, numPositions, 0, sqrt( DistanceSqr( midpoint, start ) ) )
@@ -236,18 +247,19 @@ void function HandleSingleHardpointMovement( HardpointState hp, NewHardpointStat
 		path = []
 		randomSpots.randomize()
 
-		midpoint = randomSpots[ RandomInt( randomSpots.len() - 1) ] + <0,0,150>
+		midpoint = randomSpots[ RandomInt( randomSpots.len() - 1 ) ] + < 0, 0, 150 >
 
 		foreach ( vector point in FindPath( start, midpoint ) )
 			path.append( point )
 		foreach ( vector point in FindPath( midpoint, end ) )
 			path.append( point )
-	} else {
-		path = FindPath( start, end ) 
+	}
+	else
+	{
+		path = FindPath( start, end )
 	}
 
-
-    thread HandleSingleHardpointMovementFollow( hp, newHp, path )
+	thread HandleSingleHardpointMovementFollow( hp, newHp, path )
 }
 
 void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpointState newHp, array<vector> path )
@@ -258,85 +270,125 @@ void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpoi
 		return
 	}
 
-    hardpointsReady += 1
+	hardpointsReady += 1
 
-    while ( hardpointsReady < 3 )
-        WaitFrame()
+	while ( hardpointsReady < 3 )
+		WaitFrame()
 
-    thread EmitHardpointHoverSound( hp )
+	thread EmitHardpointHoverSound( hp )
 
 	array<entity> activeFX
 	entity dirFX
 
 	try
 	{
-		activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < -10, -10, -2>, <90,90,90> ) )
-		activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 10, 10, -2>, <90,90,90> ) )
-		activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 10, -10, -2>, <90,90,90> ) )
-		activeFX.append( StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < -10, 10, -2>, <90,90,90> ) )
-	} catch ( err ) { }
-	
-    // angle it correctly
-    hp.prop.SetAngles( <0, hp.prop.GetAngles().y, 0> )
-    
-    entity mover = CreateScriptMover( hp.prop.GetOrigin(), hp.prop.GetAngles() )
-    hp.prop.SetParent( mover )
+		activeFX.append(
+			StartParticleEffectOnEntityWithPos_ReturnEntity(
+				hp.prop,
+				GetParticleSystemIndex( $"P_team_jet_hover_HLD" ),
+				FX_PATTACH_CUSTOMORIGIN_FOLLOW,
+				hp.prop.LookupAttachment( "REF" ),
+				< -10, -10, -2 >,
+				< 90, 90, 90 >
+			)
+		)
+		activeFX.append(
+			StartParticleEffectOnEntityWithPos_ReturnEntity(
+				hp.prop,
+				GetParticleSystemIndex( $"P_team_jet_hover_HLD" ),
+				FX_PATTACH_CUSTOMORIGIN_FOLLOW,
+				hp.prop.LookupAttachment( "REF" ),
+				< 10, 10, -2 >,
+				< 90, 90, 90 >
+			)
+		)
+		activeFX.append(
+			StartParticleEffectOnEntityWithPos_ReturnEntity(
+				hp.prop,
+				GetParticleSystemIndex( $"P_team_jet_hover_HLD" ),
+				FX_PATTACH_CUSTOMORIGIN_FOLLOW,
+				hp.prop.LookupAttachment( "REF" ),
+				< 10, -10, -2 >,
+				< 90, 90, 90 >
+			)
+		)
+		activeFX.append(
+			StartParticleEffectOnEntityWithPos_ReturnEntity(
+				hp.prop,
+				GetParticleSystemIndex( $"P_team_jet_hover_HLD" ),
+				FX_PATTACH_CUSTOMORIGIN_FOLLOW,
+				hp.prop.LookupAttachment( "REF" ),
+				< -10, 10, -2 >,
+				< 90, 90, 90 >
+			)
+		)
+	}
+	catch ( err )
+	{
+	}
 
-	
-    #if !OCTBOTS
-	    float speed = 200.
-	#else
-	    float speed = 50.
-	#endif
-    
-    float totalTime = Distance2D( hp.prop.GetOrigin(), newHp.origin ) / speed
-    float timePerLine = min( max( totalTime / path.len(), 0.01 ), 5. )
+	// angle it correctly
+	hp.prop.SetAngles( < 0, hp.prop.GetAngles().y, 0 > )
 
-    foreach( vector point in path )
-    {
+	entity mover = CreateScriptMover( hp.prop.GetOrigin(), hp.prop.GetAngles() )
+	hp.prop.SetParent( mover )
+
+	float speed = 50.0
+	float totalTime = Distance2D( hp.prop.GetOrigin(), newHp.origin ) / speed
+	float timePerLine = min( max( totalTime / path.len(), 0.01 ), 5.0 )
+
+	foreach ( vector point in path )
+	{
 		try
 		{
 			float angle = RadToDeg( DotProduct( hp.prop.GetOrigin(), point ) )
-			dirFX = StartParticleEffectOnEntityWithPos_ReturnEntity( hp.prop, GetParticleSystemIndex( $"P_team_jet_hover_HLD" ), FX_PATTACH_CUSTOMORIGIN_FOLLOW, hp.prop.LookupAttachment( "REF" ), < 0, 0, 20>, <0,angle,0> )
-		} catch ( err ) { }
+			dirFX =
+				StartParticleEffectOnEntityWithPos_ReturnEntity(
+					hp.prop,
+					GetParticleSystemIndex( $"P_team_jet_hover_HLD" ),
+					FX_PATTACH_CUSTOMORIGIN_FOLLOW,
+					hp.prop.LookupAttachment( "REF" ),
+					< 0, 0, 20 >,
+					< 0, angle, 0 >
+				)
+		}
+		catch ( err )
+		{
+		}
 
 		point = FitHardpoint( hp.prop, point )
-        mover.NonPhysicsMoveTo( point, timePerLine, 0.0, 0.0 )
+		mover.NonPhysicsMoveTo( point, timePerLine, 0.0, 0.0 )
 
-	    #if !OCTBOTS
-	        wait timePerLine
-		#else
-	        WaitFrame()
-		#endif
+		wait timePerLine
 
 		if ( IsValid( dirFX ) )
 			dirFX.Destroy()
-    }
+	}
 
-    mover.NonPhysicsMoveTo( newHp.origin, timePerLine * 2, 0.0, 0.0 )
-    mover.NonPhysicsRotateTo( newHp.angles, timePerLine * 4, 0.0, 0.0 )
+	mover.NonPhysicsMoveTo( newHp.origin, timePerLine * 2, 0.0, 0.0 )
+	mover.NonPhysicsRotateTo( newHp.angles, timePerLine * 4, 0.0, 0.0 )
 
-    wait timePerLine * 4 // wait last moveto
+	wait timePerLine * 4 // wait last moveto
 
-    // clear mover
-    hp.prop.ClearParent()
-    mover.Destroy()
+	// clear mover
+	hp.prop.ClearParent()
+	mover.Destroy()
 
-    // setup new hp
-    hp.prop.SetOrigin( newHp.origin )
-    hp.prop.SetAngles( newHp.angles )
-    hp.ent.SetOrigin( hp.prop.GetOrigin() )
+	// setup new hp
+	hp.prop.SetOrigin( newHp.origin )
+	hp.prop.SetAngles( newHp.angles )
+	hp.ent.SetOrigin( hp.prop.GetOrigin() )
 
-    // setup new trigger
-    hp.trigger = newHp.trigger
-    hp.trigger.SetOwner( hp.ent )
-    hp.trigger.Enable()
+	// setup new trigger
+	hp.trigger = newHp.trigger
+	hp.trigger.SetOwner( hp.ent )
+	hp.trigger.Enable()
 
-    hp.ent.Signal( "StoppedHardpointMovement" )
+	hp.ent.Signal( "StoppedHardpointMovement" )
 
-    hardpointsReady -= 1
+	hardpointsReady -= 1
 
-    hp.trigger.SearchForNewTouchingEntity()
+	hp.trigger.SearchForNewTouchingEntity()
 
 	if ( IsValid( dirFX ) )
 		dirFX.Destroy()
@@ -349,22 +401,22 @@ void function HandleSingleHardpointMovementFollow( HardpointState hp, NewHardpoi
 
 vector function FitHardpoint( entity prop, vector point )
 {
-	return point + FitHardpointAxial( prop, point, <1,0,0> ) + FitHardpointAxial( prop, point, <0,1,0> ) + FitHardpointAxial( prop, point, <0,0,1> )
+	return point + FitHardpointAxial( prop, point, < 1, 0, 0 > ) + FitHardpointAxial( prop, point, < 0, 1, 0 > ) + FitHardpointAxial( prop, point, < 0, 0, 1 > )
 }
 
-const float FloatingDist = 20.
+const float FloatingDist = 20.0
 vector function FitHardpointAxial( entity prop, vector point, vector dir )
 {
 	float l = -FitHardpointDir( prop, point, dir )
 	float r = FitHardpointDir( prop, point, -dir )
 
 	if ( fabs( l ) != FloatingDist && fabs( r ) != FloatingDist )
-		return ( ( l + r ) / 2. ) * dir
+		return ( ( l + r ) / 2.0 ) * dir
 	if ( -l < r )
 		return -( l + FloatingDist ) * dir
 	if ( -l > r )
 		return -( l - FloatingDist ) * dir
-	return <0,0,0>
+	return < 0, 0, 0 >
 }
 
 float function FitHardpointDir( entity prop, vector point, vector dir )
@@ -375,124 +427,84 @@ float function FitHardpointDir( entity prop, vector point, vector dir )
 
 void function HandleHardpointRuiMovement( HardpointState hp )
 {
-    hp.ent.EndSignal( "StoppedHardpointMovement" )
+	hp.ent.EndSignal( "StoppedHardpointMovement" )
 
-    foreach( entity player in GetPlayerArray() )
-        Remote_CallFunction_NonReplay( player, "ServerCallback_MobileCapturepointMoveUI", hp.ent.GetEncodedEHandle(), hp.ent.s.offsetRef.GetEncodedEHandle() )
+	foreach ( entity player in GetPlayerArray() )
+		Remote_CallFunction_NonReplay( player, "ServerCallback_MobileCapturepointMoveUI", hp.ent.GetEncodedEHandle(), hp.ent.s.offsetRef.GetEncodedEHandle() )
 
 	OnThreadEnd(
 		function() : ( hp )
 		{
-            foreach( entity player in GetPlayerArray() )
-                Remote_CallFunction_NonReplay( player, "ServerCallback_MobileCapturepointStopUIMove", hp.ent.GetEncodedEHandle() )
-        }
+			foreach ( entity player in GetPlayerArray() )
+				Remote_CallFunction_NonReplay( player, "ServerCallback_MobileCapturepointStopUIMove", hp.ent.GetEncodedEHandle() )
+		}
 	)
 
-    for(;;)
-    {
-        hp.ent.SetOrigin( hp.prop.GetOrigin() )
-        WaitFrame()
-    }
+	for ( ; ; )
+	{
+		hp.ent.SetOrigin( hp.prop.GetOrigin() )
+		WaitFrame()
+	}
 }
 
 void function HandleHardpointTrigger( HardpointState hp, entity trigger )
 {
-    hp.ent.EndSignal( "StoppedHardpointMovement" )
-    trigger.SetParent( hp.prop )
-    trigger.SetOwner( hp.ent )
+	hp.ent.EndSignal( "StoppedHardpointMovement" )
+	trigger.SetParent( hp.prop )
+	trigger.SetOwner( hp.ent )
 
-    AddCallback_ScriptTriggerEnter( trigger, OnHardpointEnter )
-    AddCallback_ScriptTriggerLeave( trigger, OnHardpointLeave )
+	AddCallback_ScriptTriggerEnter( trigger, OnHardpointEnter )
+	AddCallback_ScriptTriggerLeave( trigger, OnHardpointLeave )
 
 	OnThreadEnd(
 		function() : ( hp, trigger )
 		{
-            foreach( entity ent in GetAllEntitiesInTrigger( trigger ) )
-                OnHardpointLeave( trigger, ent )
-            trigger.Destroy()
+			foreach ( entity ent in GetAllEntitiesInTrigger( trigger ) )
+				OnHardpointLeave( trigger, ent )
+			trigger.Destroy()
 
-		    hp.trigger.SearchForNewTouchingEntity()
+			hp.trigger.SearchForNewTouchingEntity()
 			foreach ( entity ent in hp.trigger.GetTouchingEntities() )
 				OnHardpointEnter( hp.trigger, ent )
-        }
+		}
 	)
 
-    hp.ent.WaitSignal( "StoppedHardpointMovement" )
+	hp.ent.WaitSignal( "StoppedHardpointMovement" )
 }
 
 void function EmitHardpointHoverSound( HardpointState hp )
 {
-    hp.ent.EndSignal( "StoppedHardpointMovement" )
+	hp.ent.EndSignal( "StoppedHardpointMovement" )
 
 	OnThreadEnd(
 		function() : ( hp )
 		{
 			StopSoundOnEntity( hp.prop, "titan_core_flight_hover_3p" )
-        }
+		}
 	)
 
-	for(;;)
+	for ( ; ; )
 	{
-		EmitSoundOnEntity( hp.prop, "titan_core_flight_hover_3p" ) // boost_hover_body_3p_enemy 
+		EmitSoundOnEntity( hp.prop, "titan_core_flight_hover_3p" ) // boost_hover_body_3p_enemy
 		wait 3.5 // GetSoundDuration( "titan_core_flight_hover_3p_enemy" ) // 3.94069
 	}
 }
 
-bool function MobileHardpointRemove( entity ent )
+array<vector> function FindPath( vector start, vector end )
 {
-    string gameMode = "cp"
+	array<vector> path = []
 
-	not_AT_CollisionCleanup( ent )
-
-	string gamemodeKey = "gamemode_" + gameMode
-	if ( ent.HasKey( gamemodeKey ) && (ent.kv[gamemodeKey] == "0" || ent.kv[gamemodeKey] == "") )
-	{
-		// printt( "Removing ent " + ent.GetClassName() + " with " + gamemodeKey + " = \"" + ent.kv[gamemodeKey] + "\" at " + ent.GetOrigin() )
-		ent.Destroy()
-		return true
-	}
-	//printt( "keeping ent", ent.GetClassName() )
-
-	return false
-}
-
-array<vector> function FindPath(vector start, vector end)
-{
-    #if OCTBOTS
-    array< array<vector> > out_path
-	    // doing this is does really weird stuff
+	#if OCTBOTS
+		array<array<vector> > out_path
+		// doing this is does really weird stuff
 		OcttreeFindPath( start, end, out_path )
-		array<vector> path = out_path[0]
-    #elseif BP_ORT
-		var navs = NavigationCreate( HULL_HUMAN );
-		try {
-			NavigationFindPath( navs, expect vector ( NavigationRandomPoint( navs, start, 50.) ), expect vector ( NavigationRandomPoint( navs, end, 50.) ) );
-		} catch ( err ) { printt( err ) }
-		array<vector> path = []
-
-		var point = NavigationNextPoint( navs );
-		while( point != null ) {
-			print( point )
-			path.append( expect vector( point ) )
-			point = NavigationNextPoint( navs )
-		}
-    #else 
-	    print( "no bp_ort :(" )
-	    array<vector> path = [ end, start ]
-    #endif
+		path = out_path[ 0 ]
+	#endif
 
 	return path
 }
 
-void function not_AT_CollisionCleanup( entity spawnPoint )
+bool function ThreeMinuteMusicCheck( int timeLeftSeconds, float timeLimit )
 {
-	if ( spawnPoint.GetScriptName() == "at_mega_turret" )
-	{
-		if ( spawnPoint.GetLinkEnt() != null ) // assuming this is func_brush_navmesh_separator
-		{
-			entity brush = spawnPoint.GetLinkEnt()
-			brush.NotSolid()
-		}
-	}
+	return level.nv.matchProgress >= 70 || timeLeftSeconds < ( timeLimit * 0.4 - 60 )
 }
-

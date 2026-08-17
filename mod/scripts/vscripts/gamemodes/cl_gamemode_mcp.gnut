@@ -8,6 +8,8 @@ global function ServerCallback_MobileCapturepointStopUIMove
 
 void function ClGamemodeMCP_Init()
 {
+	ClGameState_RegisterGameStateAsset( $"ui/gamestate_info_cp.rpak" )
+
 	RegisterLevelMusicForTeam( eMusicPieceID.LEVEL_INTRO, "music_mp_hardpoint_intro_flyin", TEAM_IMC )
 	RegisterLevelMusicForTeam( eMusicPieceID.LEVEL_INTRO, "music_mp_hardpoint_intro_flyin", TEAM_MILITIA )
 
@@ -28,37 +30,35 @@ void function ClGamemodeMCP_Init()
 
 	AddCreateCallback( "info_hardpoint", OnHardpointCreated )
 
-    RegisterSignal( "StopUIMove" )
+	RegisterSignal( "StopUIMove" )
 }
-
 
 void function ServerCallback_MobileCapturepoints_Moving()
 {
-    ClGameState_SetInfoStatusText( Localize( "#MCP_CAPTURE_POINTS_MOVING_QUICK" ) )
+	ClGameState_SetInfoStatusText( Localize( "#MCP_CAPTURE_POINTS_MOVING_QUICK" ) )
 
-    AnnouncementData announcement = Announcement_Create( "#MCP_CAPTURE_POINTS_MOVING" )
-    Announcement_SetSubText( announcement, Localize( "#MCP_CAPTURE_POINTS_MOVING_SUB" ))
-    Announcement_SetTitleColor( announcement, <0,1,0> )
-    Announcement_SetPurge( announcement, true )
-    Announcement_SetPriority( announcement, 200 ) //Be higher priority than Titanfall ready indicator etc
-    Announcement_SetSoundAlias( announcement, SFX_HUD_ANNOUNCE_QUICK )
-    Announcement_SetStyle( announcement, ANNOUNCEMENT_STYLE_SWEEP )
-    AnnouncementFromClass( GetLocalViewPlayer(), announcement )
+	AnnouncementData announcement = Announcement_Create( "#MCP_CAPTURE_POINTS_MOVING" )
+	Announcement_SetSubText( announcement, Localize( "#MCP_CAPTURE_POINTS_MOVING_SUB" ) )
+	Announcement_SetTitleColor( announcement, < 0, 1, 0 > )
+	Announcement_SetPurge( announcement, true )
+	Announcement_SetPriority( announcement, 200 ) // Be higher priority than Titanfall ready indicator etc
+	Announcement_SetSoundAlias( announcement, SFX_HUD_ANNOUNCE_QUICK )
+	Announcement_SetStyle( announcement, ANNOUNCEMENT_STYLE_SWEEP )
+	AnnouncementFromClass( GetLocalViewPlayer(), announcement )
 }
 
 void function ServerCallback_MobileCapturepoints_Settled()
 {
-    ClGameState_SetInfoStatusText( "" )
+	ClGameState_SetInfoStatusText( "" )
 }
 
 void function OnHardpointCreated( entity hardpoint )
 {
-    
 }
 
 void function ServerCallback_MobileCapturepointMoveUI( int capturePointHandle, int propHandle )
 {
-    thread MobileCapturepointMoveUIThreaded( capturePointHandle, propHandle )
+	thread MobileCapturepointMoveUIThreaded( capturePointHandle, propHandle )
 }
 
 void function MobileCapturepointMoveUIThreaded( int capturePointHandle, int propHandle )
@@ -66,8 +66,8 @@ void function MobileCapturepointMoveUIThreaded( int capturePointHandle, int prop
 	entity capturePoint = GetEntityFromEncodedEHandle( capturePointHandle )
 	entity prop = GetEntityFromEncodedEHandle( capturePointHandle )
 
-    capturePoint.EndSignal( "StopUIMove" )
-    capturePoint.EndSignal( "OnDestroy" )
+	capturePoint.EndSignal( "StopUIMove" )
+	capturePoint.EndSignal( "OnDestroy" )
 
 	RuiTrackFloat3( GetHardpointWorlRui( capturePoint.GetHardpointID() ), "pos", prop, RUI_TRACK_ABSORIGIN_FOLLOW )
 }
@@ -78,5 +78,5 @@ void function ServerCallback_MobileCapturepointStopUIMove( int capturePointHandl
 
 	RuiSetFloat3( GetHardpointWorlRui( capturePoint.GetHardpointID() ), "pos", capturePoint.GetOrigin() + < 0, 0, 64 > )
 
-    capturePoint.Signal( "StopUIMove" )
+	capturePoint.Signal( "StopUIMove" )
 }
