@@ -146,8 +146,6 @@ void function EntitiesDidLoad_SpawnHardpoints()
 		hpState.ent.s.lastCappedBy <- TEAM_UNASSIGNED
 		hpState.ent.s.wasJustCapping <- false
 		hpState.ent.s.lastPower <- 0
-		hpState.ent.s.isPlayingCapturingSound <- false
-		hpState.ent.s.isPlayingAmpingCapturingSound <- false
 
 		hpState.ent.s.offsetRef <- CreateScriptRef( hpState.ent.GetOrigin() + < 0, 0, 64 >, < 0.0, 0.0, 0.0 > )
 		hpState.ent.s.offsetRef.SetParent( hpState.prop )
