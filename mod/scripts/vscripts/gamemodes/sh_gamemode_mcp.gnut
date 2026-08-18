@@ -37,8 +37,8 @@ void function MobilePointMode_Init()
 
 		#if SERVER
 			GameMode_AddServerInit( GAMEMODE_MCP, GamemodeMCP_Init )
-			GameMode_SetPilotSpawnpointsRatingFunc( GAMEMODE_MCP, RateSpawnpoints_MCP )
-			GameMode_SetTitanSpawnpointsRatingFunc( GAMEMODE_MCP, RateSpawnpoints_MCP )
+			GameMode_SetPilotSpawnpointsRatingFunc( GAMEMODE_MCP, RateSpawnpoints_CP )
+			GameMode_SetTitanSpawnpointsRatingFunc( GAMEMODE_MCP, RateSpawnpoints_CP )
 		#elseif CLIENT
 			GameMode_AddClientInit( GAMEMODE_MCP, ClGamemodeCP_Init )
 			GameMode_AddClientInit( GAMEMODE_MCP, ClGamemodeMCP_Init )

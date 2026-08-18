@@ -1,6 +1,5 @@
 untyped
 global function GamemodeMCP_Init
-global function RateSpawnpoints_MCP
 
 global hardpointsReady = 0
 
@@ -44,50 +43,6 @@ void function GamemodeMCP_Init()
 	ScoreEvent_SetEarnMeterValues( "HardpointSnipe", 0.1, 0.15 )
 
 	RegisterSignal( "StoppedHardpointMovement" )
-}
-
-void function RateSpawnpoints_MCP( int checkClass, array<entity> spawnpoints, int team, entity player )
-{
-	if ( HasSwitchedSides() )
-		team = GetOtherTeam( team )
-
-	// check hardpoints, determine which ones we own
-	array<entity> startSpawns = SpawnPoints_GetPilotStart( team )
-	vector averageFriendlySpawns
-
-	// average out startspawn positions
-	foreach ( entity spawnpoint in startSpawns )
-		averageFriendlySpawns += spawnpoint.GetOrigin()
-
-	averageFriendlySpawns /= startSpawns.len()
-
-	entity friendlyHardpoint // determine our furthest out hardpoint
-	foreach ( entity hardpoint in HARDPOINTS )
-	{
-		if ( hardpoint.GetTeam() == player.GetTeam() && GetGlobalNetFloat( "objective" + CapturePoint_GetGroup( hardpoint ) + "Progress" ) >= 0.95 )
-		{
-			if ( IsValid( friendlyHardpoint ) )
-			{
-				if ( Distance2D( averageFriendlySpawns, hardpoint.GetOrigin() ) > Distance2D( averageFriendlySpawns, friendlyHardpoint.GetOrigin() ) )
-					friendlyHardpoint = hardpoint
-			}
-			else
-				friendlyHardpoint = hardpoint
-		}
-	}
-
-	vector ratingPos
-	if ( IsValid( friendlyHardpoint ) )
-		ratingPos = friendlyHardpoint.GetOrigin()
-	else
-		ratingPos = averageFriendlySpawns
-
-	foreach ( entity spawnpoint in spawnpoints )
-	{
-		// idk about magic number here really
-		float rating = 1.0 - ( Distance2D( spawnpoint.GetOrigin(), ratingPos ) / 1000.0 )
-		spawnpoint.CalculateRating( checkClass, player.GetTeam(), rating, rating )
-	}
 }
 
 void function EntitiesDidLoad_SpawnHardpoints()
@@ -163,7 +118,7 @@ void function EntitiesDidLoad_SpawnHardpoints()
 	#if BP_ORT && OCTBOTS
 		thread HandleCapturepointMovement()
 	#else
-		throw "no bp_ort; install bp_ort"
+		// throw "no bp_ort; install bp_ort"
 	#endif
 }
 
